@@ -1,33 +1,27 @@
-const { createProxyMiddleware } = require('http-proxy-middleware');
+const axios = require("axios");
 
 module.exports = async (req, res) => {
   try {
-    const targetUrl = req.query.url; // 从查询参数中获取目标 URL
+    const { url } = req.query; // 从查询参数获取目标 URL
 
-    if (!targetUrl) {
-      return res.status(400).json({ error: 'Missing target URL' });
+    if (!url) {
+      return res.status(400).json({ error: "Missing target URL" });
     }
 
-    // 创建代理中间件
-    const proxy = createProxyMiddleware({
-      target: targetUrl,
-      changeOrigin: true,
-      followRedirects: true,
+    // 处理 URL，确保包含 http/https
+    const targetUrl = /^https?:\/\//.test(url) ? url : `https://${url}`;
+
+    // 代理请求
+    const response = await axios.get(targetUrl, {
       headers: {
-        'User-Agent': 'Vercel Proxy',
-      },
-      onProxyRes: (proxyRes) => {
-        // 添加 CORS 头部
-        proxyRes.headers['Access-Control-Allow-Origin'] = '*';
-        proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE';
-        proxyRes.headers['Access-Control-Allow-Headers'] = '*';
+        "User-Agent": "Vercel-Proxy",
       },
     });
 
-    // 处理请求
-    proxy(req, res);
+    // 返回目标站点的内容
+    res.status(200).send(response.data);
   } catch (error) {
-    console.error('Proxy error:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error("请求出错:", error);
+    res.status(500).json({ error: "请求失败", details: error.message });
   }
 };
