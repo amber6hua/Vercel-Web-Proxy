@@ -1,9 +1,8 @@
 {
   "version": 2,
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/api/index.js"
+  "functions": {
+    "api/index.js": {
+      "runtime": "nodejs18.x"  // 适用于 Vercel 的无服务器 Node.js 运行时
     }
-  ]
+  }
 }
