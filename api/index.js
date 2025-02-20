@@ -1,16 +1,14 @@
-module.exports = async (req, res) => {
-  if (req.url === '/') {
-    return res.send(getRootHtml());
-  }
+const { createProxyMiddleware } = require('http-proxy-middleware');
 
-  // 代理逻辑
+module.exports = async (req, res) => {
   try {
-    const targetUrl = req.query.url;
+    const targetUrl = req.query.url; // 从查询参数中获取目标 URL
 
     if (!targetUrl) {
       return res.status(400).json({ error: 'Missing target URL' });
     }
 
+    // 创建代理中间件
     const proxy = createProxyMiddleware({
       target: targetUrl,
       changeOrigin: true,
@@ -19,34 +17,17 @@ module.exports = async (req, res) => {
         'User-Agent': 'Vercel Proxy',
       },
       onProxyRes: (proxyRes) => {
+        // 添加 CORS 头部
         proxyRes.headers['Access-Control-Allow-Origin'] = '*';
         proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE';
         proxyRes.headers['Access-Control-Allow-Headers'] = '*';
       },
     });
 
+    // 处理请求
     proxy(req, res);
   } catch (error) {
     console.error('Proxy error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
-
-function getRootHtml() {
-  return `
-    <!DOCTYPE html>
-    <html lang="zh-CN">
-    <head>
-      <meta charset="UTF-8">
-      <title>Vercel Proxy</title>
-    </head>
-    <body>
-      <h1>Vercel Proxy</h1>
-      <form action="/" method="GET">
-        <input type="text" name="url" placeholder="输入目标 URL" required>
-        <button type="submit">代理</button>
-      </form>
-    </body>
-    </html>
-  `;
-}
